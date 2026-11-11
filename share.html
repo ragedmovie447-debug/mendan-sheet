@@ -427,7 +427,8 @@ function panelStu(){
   return `<h3>${cur+1}番　${esc(nm(st,cur))}さん</h3><p class="hint">左の一覧で児童を選びます。入力は自動で保存され、右のプレビューにすぐ反映されます。</p>
   <div class="row"><label class="f">名前<input type="text" data-path="name" value="${esc(st.name)}"></label>
   <label class="f">係<input type="text" data-path="kakari" value="${esc(st.kakari)}"></label>
-  ${S.useKaisha!==false?`<label class="f">会社<input type="text" data-path="kaisha" value="${esc(st.kaisha)}"></label>`:''}</div>
+  ${S.useKaisha!==false?`<label class="f">会社<input type="text" data-path="kaisha" value="${esc(st.kaisha)}"></label>`:''}
+  <label class="f" style="flex-direction:row;align-items:center;gap:6px;align-self:flex-end;padding-bottom:10px"><input type="checkbox" data-set="useKaisha" data-rerender="1" ${S.useKaisha!==false?'checked':''}>会社を使う（全員に反映）</label></div>
   <h4>テストの点数</h4><div class="two">${grid}</div>
   ${itemRows('授業の中で見えた姿（学習面）','learn',3)}
   ${itemRows('授業のそとで見えた姿（生活面）','life',3)}
@@ -478,7 +479,7 @@ document.addEventListener('input',e=>{
   const el=e.target;
   if(el.dataset.set){
     let v=el.type==='checkbox'?el.checked:el.value;if(el.dataset.num)v=parseFloat(v)||0;
-    setPath(S,el.dataset.set,v);save();renderPreview();return;
+    setPath(S,el.dataset.set,v);save();renderPreview();if(el.dataset.rerender)renderPanel();return;
   }
   if(el.dataset.tu){const [j,i]=el.dataset.tu.split('.');S.subj[j].tests[+i].u=el.value;save();renderPreview();return;}
   const st=S.students[cur];
