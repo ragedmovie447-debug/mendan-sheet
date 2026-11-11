@@ -151,7 +151,8 @@ textarea{width:100%;resize:vertical;line-height:1.5}
 <script>
 'use strict';
 /* ================= データ ================= */
-const KEY='mendan-maker-v2';
+const EDITION='mine';   // 'mine'=自分用 / 'share'=配布用（空の状態・保存先も別）
+const KEY=EDITION==='mine'?'mendan-maker-v2':'mendan-maker-share-v1';
 const SUBJ=['ko','sa'];
 const CIR='①②③④⑤⑥⑦⑧⑨⑩⑪⑫';
 const MAXT=12;
@@ -159,6 +160,7 @@ const PARTS={ks:'知識・技能 ＋ 思考・判断',k:'知識・技能 のみ'
 const emptyItem=()=>({k:'',d:''});
 const hasK=t=>t.p.indexOf('k')>=0, hasS=t=>t.p.indexOf('s')>=0;
 function defSubj(){
+  if(EDITION==='share')return {ko:{name:'国語',max:{k:100,s:100},tests:[{u:'',p:'ks'}]},sa:{name:'算数',max:{k:100,s:100},tests:[{u:'',p:'ks'}]}};
   return {
     ko:{name:'国語',max:{k:100,s:100},tests:[
       {u:'白いぼうし',p:'ks'},{u:'アップとルーズ',p:'ks'},{u:'漢字50問テスト①',p:'k'},
@@ -191,15 +193,15 @@ function sampleStudent(subj){
            {k:'友だちの考えとつなぐ',d:'友だちの意見を聞いて、自分の考えを広げたり、深めたりしています。'}];
   s.life=[{k:'気持ちの言語化',d:'うれしい、くやしいなどの気持ちを、ことばにして相手に伝えようとしています。'},
           {k:'聴き上手',d:'友だちの話を最後まで聴き、うなずきながら受け止める姿があります。'},
-          {k:'気づいて動く',d:'係や会社の仕事で、言われる前に気づいて自分から動く場面があります。'}];
+          {k:'気づいて動く',d:'係の仕事で、言われる前に気づいて自分から動く場面があります。'}];
   s.next={k:'発表にチャレンジ',d:'自分の考えをみんなの前で話す経験を、少しずつ増やしていきましょう。'};
   return s;
 }
 function defaults(){
   const subj=defSubj();
   const st=[];for(let i=0;i<35;i++)st.push(blankStudent());
-  st[0]=sampleStudent(subj);
-  return {cls:'4年1組',term:'2学期',date:'2026年11月　日',subj,students:st};
+  if(EDITION==='mine'){st[0]=sampleStudent(subj);return {cls:'4年1組',term:'2学期',date:'2026年11月　日',grade:'4年',subj,students:st};}
+  return {cls:'〇年〇組',term:'2学期',date:'〇年〇月　〇日',grade:'4年',subj,students:st};
 }
 let S;
 function load(){
@@ -209,6 +211,7 @@ function load(){
 function normalize(o){
   const d=defaults();
   const r=Object.assign({},d,o);
+  if(r.useKaisha===undefined)r.useKaisha=true;
   r.subj=o.subj&&o.subj.ko&&o.subj.sa?o.subj:defSubj();
   SUBJ.forEach(j=>{r.subj[j].max=Object.assign({k:100,s:100},r.subj[j].max);r.subj[j].tests=(r.subj[j].tests||[]).filter(t=>t&&t.p);});
   r.students=(o.students&&o.students.length?o.students:d.students).map(s=>Object.assign(blankStudent(),s));
@@ -301,7 +304,8 @@ function kw3(items){
     f.map(it=>`<div><b>・${esc(it.k)}</b><p>${esc(it.d)}</p></div>`).join('')+`</div>`;
 }
 function sheetHTML(st,i){
-  const team=(st.kakari||st.kaisha)?`　　係：${esc(st.kakari||'')}　／　会社：${esc(st.kaisha||'')}`:'';
+  const uk=S.useKaisha!==false;
+  const team=(st.kakari||(uk&&st.kaisha))?`　　係：${esc(st.kakari||'')}${uk?`　／　会社：${esc(st.kaisha||'')}`:''}`:'';
   const nx=st.next;
   return `<div class="sheet">
   <div class="sh-head"><h1>${esc(nm(st,i))}さん　学級面談</h1><div class="meta">${esc(S.cls)}　${esc(S.term)}<br>${esc(S.date)}</div></div>
@@ -375,11 +379,14 @@ function testEditor(j){
   <label class="f" style="flex-direction:row;align-items:center;gap:6px">思考・判断<input type="number" data-set="subj.${j}.max.s" data-num="1" value="${sj.max.s}" style="width:70px"></label></div>`;
 }
 function panelSet(){
-  return `<h3>テストの設定</h3><p class="hint">スプレッドシートの並びと同じ順に、テストを登録します。「知識・技能のみ」「思考・判断のみ」のテストも選べます。写真から読み取った構成が最初から入っています（単元名や数が違うときは直してください）。</p>
+  return `${EDITION==='share'?`<div style="background:#F6F6F3;border:1px solid #DDD;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px;line-height:1.7"><b>はじめに</b>　①で学級・児童数・テストを登録 → ②で名簿と点数を貼り付け → ③で特徴を入力（④でGeminiも使えます）→ ⑤で印刷。入力はこのPCのブラウザにだけ保存されます。</div>`:''}<h3>テストの設定</h3><p class="hint">スプレッドシートの並びと同じ順に、テストを登録します。「知識・技能のみ」「思考・判断のみ」のテストも選べます。写真から読み取った構成が最初から入っています（単元名や数が違うときは直してください）。</p>
   <div class="row">
    <label class="f">学級<input type="text" data-set="cls" value="${esc(S.cls)}"></label>
    <label class="f">学期<input type="text" data-set="term" value="${esc(S.term)}"></label>
    <label class="f">面談の日付（全員共通）<input type="text" data-set="date" value="${esc(S.date)}" size="22"></label>
+   <label class="f">学年（Geminiへの指示に使います）<input type="text" data-set="grade" value="${esc(S.grade||'4年')}" size="8"></label>
+   <label class="f">児童数<input type="number" min="1" max="60" data-count="1" value="${S.students.length}" style="width:80px"></label>
+   <label class="f" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" data-set="useKaisha" ${S.useKaisha!==false?'checked':''}>この学級には「会社」がある（面談シートに表示）</label>
   </div>
   ${testEditor('ko')}${testEditor('sa')}`;
 }
@@ -420,7 +427,7 @@ function panelStu(){
   return `<h3>${cur+1}番　${esc(nm(st,cur))}さん</h3><p class="hint">左の一覧で児童を選びます。入力は自動で保存され、右のプレビューにすぐ反映されます。</p>
   <div class="row"><label class="f">名前<input type="text" data-path="name" value="${esc(st.name)}"></label>
   <label class="f">係<input type="text" data-path="kakari" value="${esc(st.kakari)}"></label>
-  <label class="f">会社<input type="text" data-path="kaisha" value="${esc(st.kaisha)}"></label></div>
+  ${S.useKaisha!==false?`<label class="f">会社<input type="text" data-path="kaisha" value="${esc(st.kaisha)}"></label>`:''}</div>
   <h4>テストの点数</h4><div class="two">${grid}</div>
   ${itemRows('授業の中で見えた姿（学習面）','learn',3)}
   ${itemRows('授業のそとで見えた姿（生活面）','life',3)}
@@ -470,7 +477,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('input',e=>{
   const el=e.target;
   if(el.dataset.set){
-    let v=el.value;if(el.dataset.num)v=parseFloat(v)||0;
+    let v=el.type==='checkbox'?el.checked:el.value;if(el.dataset.num)v=parseFloat(v)||0;
     setPath(S,el.dataset.set,v);save();renderPreview();return;
   }
   if(el.dataset.tu){const [j,i]=el.dataset.tu.split('.');S.subj[j].tests[+i].u=el.value;save();renderPreview();return;}
@@ -493,6 +500,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
   const el=e.target;
   if(el.id==='importFile'){importJSON(el.files[0]);el.value='';return;}
+  if(el.dataset.count){setCount(Math.max(1,Math.min(60,parseInt(el.value,10)||S.students.length)));return;}
   if(el.dataset.tp){const [j,i]=el.dataset.tp.split('.');S.subj[j].tests[+i].p=el.value;save();renderPanel();refresh();}
 });
 window.addEventListener('beforeunload',()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}});
@@ -526,6 +534,22 @@ function act(name,el){
   }
 }
 
+/* ===== 児童数 ===== */
+function isBlankStudent(st){return !(st.name&&st.name.trim())&&status(st)==='empty'&&!(st.memo&&st.memo.trim())&&!st.kakari&&!st.kaisha;}
+function trimEmptyTail(){
+  while(S.students.length>1&&isBlankStudent(S.students[S.students.length-1]))S.students.pop();
+  if(cur>=S.students.length)cur=S.students.length-1;
+}
+function setCount(n){
+  if(n<S.students.length){
+    const lost=S.students.slice(n).filter(s=>!isBlankStudent(s)).length;
+    if(lost&&!confirm(`児童数を ${n}人 にすると、${n+1}番以降で入力済みの ${lost}人 分が消えます。よろしいですか？`)){renderPanel();return;}
+    S.students.length=n;
+  }else while(S.students.length<n)S.students.push(blankStudent());
+  if(cur>=n)cur=n-1;
+  save();renderAll();
+}
+
 /* ===== 貼り付け処理 ===== */
 function parseRows(text){
   return text.replace(/\r/g,'').split('\n').map(l=>l.split('\t')).filter(r=>r.some(x=>x.trim()!==''));
@@ -536,6 +560,7 @@ function applyRoster(){
   const names=rows.map(r=>{const c=r.map(x=>x.trim()).filter(x=>x!==''&&toNum(x)==null);return c.length?c[0]:'';});
   while(S.students.length<names.length)S.students.push(blankStudent());
   names.forEach((n,i)=>{S.students[i].name=n;});
+  trimEmptyTail();
   save();refresh();msg('msgRoster',names.length+'人の名前を反映しました（児童は全部で'+S.students.length+'人）');
 }
 function applyScores(j){
@@ -565,6 +590,7 @@ function applyScores(j){
     st.sc[j]={k:[],s:[]};
     cols.forEach(([ti,p],c)=>{st.sc[j][p][ti]=c<d.cells.length?toNum(d.cells[c]):null;});
   });
+  trimEmptyTail();
   save();refresh();
   msg(id,`${nameJ}：${data.length}人分を反映しました`+(nameMode?'（名前も反映）':'')+(maxLen<nExp?`　※${maxLen}列分（設定は${nExp}列。後ろのテストは未実施として空欄）`:'')+(data.length!==S.students.length?`　※児童数(${S.students.length})と異なります`:''),data.length!==S.students.length);
 }
@@ -572,7 +598,7 @@ function applyScores(j){
 /* ===== Gemini ===== */
 function promptFor(list){
   const memos=list.map(i=>`${i+1}：${S.students[i].memo.trim()}`).join('\n');
-  return `あなたは小学4年生の担任教師の補助をします。保護者面談で渡す資料に載せる文章を、児童ごとに作ってください。
+  return `あなたは小学${S.grade||'4年'}生の担任教師の補助をします。保護者面談で渡す資料に載せる文章を、児童ごとに作ってください。
 
 【ルール】
 ・児童は「番号」で区別します。名前は出てきません。
