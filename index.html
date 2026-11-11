@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>学級面談シートメーカー</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font:'Zen Kaku Gothic New','BIZ UDPGothic','Yu Gothic UI','Yu Gothic','Meiryo','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+  --body:'Noto Sans JP','BIZ UDPGothic','Yu Gothic UI','Yu Gothic','Meiryo','Hiragino Kaku Gothic ProN',sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--body);color:#1A1A1A;background:#F3F3F0;font-size:14px}
+button,input,textarea,select{font-family:inherit;font-size:14px}
+#printRoot{display:none}
+
+/* ===== アプリ画面 ===== */
+#app{display:grid;grid-template-columns:190px minmax(430px,1fr) 548px;height:100vh}
+#side{background:#fff;border-right:1px solid #CFCFCA;display:flex;flex-direction:column;min-height:0}
+#side h2{margin:0;padding:12px 14px;font-size:14px;border-bottom:1px solid #E2E2DD}
+#stuList{overflow:auto;flex:1}
+.stu{display:flex;align-items:center;gap:8px;width:100%;padding:7px 14px;border:0;background:none;text-align:left;cursor:pointer;border-bottom:1px solid #F0F0EC}
+.stu:hover{background:#F6F6F3}
+.stu.cur{background:#1A1A1A;color:#fff}
+.stu .no{width:22px;text-align:right;font-variant-numeric:tabular-nums;color:#777}
+.stu.cur .no{color:#ccc}
+.stu .st{margin-left:auto;font-size:12px}
+#main{display:flex;flex-direction:column;min-width:0;min-height:0}
+#tabs{display:flex;gap:2px;padding:10px 14px 0;background:#F3F3F0;flex-wrap:wrap}
+#tabs button{border:1px solid #CFCFCA;border-bottom:0;background:#E8E8E3;padding:8px 12px;border-radius:6px 6px 0 0;cursor:pointer}
+#tabs button.on{background:#fff;font-weight:700}
+#panel{flex:1;overflow:auto;background:#fff;margin:0 14px 14px;border:1px solid #CFCFCA;padding:18px 20px;min-height:0}
+#panel h3{margin:0 0 6px;font-size:16px}
+#panel h4{margin:18px 0 6px;font-size:14px;border-bottom:1px solid #DDD;padding-bottom:3px}
+.hint{color:#666;font-size:13px;line-height:1.6;margin:4px 0 10px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:#555}
+label.f input,label.f select{padding:6px 8px;border:1px solid #BBB;border-radius:4px;min-width:0}
+input[type=text],input[type=number],textarea,select{border:1px solid #BBB;border-radius:4px;padding:6px 8px}
+textarea{width:100%;resize:vertical;line-height:1.5}
+.btn{border:1px solid #1A1A1A;background:#fff;padding:7px 14px;border-radius:5px;cursor:pointer}
+.btn:hover{background:#F0F0EC}
+.btn.pri{background:#1A1A1A;color:#fff}
+.btn.pri:hover{background:#333}
+.btn.warn{border-color:#B33;color:#B33}
+.btn.sm{padding:3px 8px;font-size:12px}
+.msg{font-size:13px;margin:6px 0;min-height:18px;color:#2A6}
+.msg.err{color:#B33}
+.kwrow{display:grid;grid-template-columns:190px 1fr;gap:8px;margin:6px 0;align-items:start}
+.kwrow textarea{min-height:48px}
+.cnt{font-size:12px;color:#777;text-align:right}
+.cnt.over{color:#B33;font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.sg{display:grid;grid-template-columns:1fr 64px 64px;gap:3px 6px;align-items:center}
+.sg .lb{font-size:12px;color:#444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sg .hd{font-size:12px;color:#555;text-align:center}
+.sg input{width:100%;padding:4px;text-align:center}
+.sg .na{text-align:center;color:#999;background:#F3F3F0;border-radius:4px;padding:5px 0}
+.tl{display:grid;grid-template-columns:26px 1fr 150px auto;gap:4px 6px;align-items:center;margin:4px 0}
+.tl .no{text-align:right;color:#777;font-size:12px}
+.tl input,.tl select{width:100%;padding:5px 6px}
+#pv{background:#E7E7E2;border-left:1px solid #CFCFCA;overflow:auto;padding:14px;min-height:0}
+#pv .cap{font-size:12px;color:#666;margin-bottom:8px}
+.pvw{width:calc(794px*.66);height:calc(1123px*.66);box-shadow:0 1px 8px rgba(0,0,0,.25);background:#fff;overflow:hidden}
+.pvi{transform:scale(.66);transform-origin:top left;width:210mm;height:297mm}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;border:1.5px solid currentColor}
+.dot.full{background:currentColor}
+.dot.half{background:linear-gradient(90deg,currentColor 50%,transparent 50%)}
+
+/* ===== A4シート ===== */
+.sheet{width:210mm;height:297mm;padding:44px 44px 40px;display:flex;flex-direction:column;gap:16px;background:#fff;color:#1A1A1A;font-family:var(--body);overflow:hidden;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1A1A1A;padding-bottom:8px}
+.sh-head h1{margin:0;font-family:var(--font);font-weight:900;font-size:30px;letter-spacing:.06em}
+.sh-head .meta{font-size:13px;color:#555;text-align:right;line-height:1.5}
+.sh-sec{display:flex;flex-direction:column;gap:10px}
+.sh-title{display:flex;align-items:baseline;border-bottom:2px solid #1A1A1A;padding-bottom:4px}
+.sh-title b{font-family:var(--font);font-size:20px;font-weight:700;letter-spacing:.08em}
+.sh-title span{margin-left:14px;font-family:var(--font);font-size:13px;font-weight:500;letter-spacing:.06em;color:#555}
+.sh-tbs{display:flex;gap:28px;align-items:flex-start}
+.sh-tbs>div{flex:1;min-width:0}
+.sheet .tb{width:100%;border-collapse:collapse;table-layout:fixed}
+.sheet .tb th{border:1px solid #777;border-bottom:2px solid #1A1A1A;font-weight:500;font-size:12px;padding:3px 2px;line-height:1.25}
+.sheet .tb th.sj{font-family:var(--font);font-size:16px;font-weight:700;text-align:left;padding-left:8px}
+.sheet .tb th small{display:block;font-size:12px;color:#555;font-weight:400}
+.sheet .tb td{border:1px solid #777;text-align:center;font-size:14px;line-height:1.1;height:calc(var(--rh,24px) - var(--cut,0px));padding:0 2px}
+.sheet .tb td.u{text-align:left;font-size:12.5px;padding:0 6px;white-space:nowrap;overflow:hidden}
+.sheet .tb td.u i{font-style:normal;color:#555;margin-right:3px}
+.sheet .tb td.na{background:#EFEFEF;color:#666}
+.sh-gl{display:flex;justify-content:space-between;align-items:center;margin-top:2px;font-size:13px;color:#555}
+.sh-leg{display:flex;align-items:center;gap:18px;color:#333}
+.sh-leg i{display:inline-block;width:16px;height:11px;border:1.5px solid #1A1A1A;vertical-align:-1px;margin-right:6px}
+.sh-pan{display:flex;gap:28px}
+.pn{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.pn .tt{display:flex;align-items:baseline;gap:10px}
+.pn .tt b{font-size:16px}
+.pn .tt span{font-size:12px;color:#555}
+.pn .pl{display:flex}
+.pn .ya{width:34px;flex:none;position:relative;font-size:12px;color:#555}
+.pn .ya span{position:absolute;right:6px}
+.pn .pa{flex:1;position:relative;border-bottom:2px solid #1A1A1A}
+.pn .gl{position:absolute;left:0;right:0;border-top:1px dashed #B5B5B5}
+.pn .gs{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:flex-end}
+.pn .gp{flex:1;display:flex;justify-content:center;align-items:flex-end;gap:2px}
+.pn .gp u{display:block;border:1.5px solid #1A1A1A;text-decoration:none;background:#1A1A1A}
+.pn .gp u.h{background:repeating-linear-gradient(45deg,#1A1A1A 0,#1A1A1A 2px,#FFFFFF 2px,#FFFFFF 5px)}
+.pn .xl{display:flex;padding-left:34px}
+.pn .xl div{flex:1;text-align:center;font-size:12px;color:#555}
+.sh-kw{display:grid;column-gap:20px;padding:6px 0 10px;border-bottom:1px solid #999}
+.sh-kw>div{display:flex;flex-direction:column;gap:6px}
+.sh-kw>div+div{border-left:1px solid #999;padding-left:20px}
+.sh-kw b{font-family:var(--font);font-size:20px;font-weight:700;line-height:1.35}
+.sh-kw p{margin:0;font-size:14px;line-height:1.7;color:#333}
+.sh-next{display:flex;align-items:center;gap:24px;border-top:2px solid #1A1A1A;border-bottom:2px solid #1A1A1A;padding:12px 4px}
+.sh-next .l{font-family:var(--font);font-size:16px;font-weight:700;letter-spacing:.08em;flex:none}
+.sh-next .k{font-family:var(--font);font-size:22px;font-weight:700;flex:none}
+.sh-next .d{font-size:14px;line-height:1.6;color:#333}
+.sh-memo{flex:1;min-height:56px;border:1px solid #999;padding:8px 14px 6px;display:flex;flex-direction:column;gap:2px}
+.sh-memo .l{font-size:13px;font-weight:700;color:#555}
+.sh-memo .l span{font-weight:400;margin-left:12px}
+.sh-memo .ln{flex:1;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 29px,#B5B5B5 29px,#B5B5B5 30px)}
+/* 文字が多いときの自動縮小 */
+.sheet.fit1{--cut:1px}.sheet.fit1 .sh-kw b{font-size:18px}.sheet.fit1 .sh-kw p{font-size:13px;line-height:1.6}
+.sheet.fit2{--cut:2px}.sheet.fit2 .sh-kw b{font-size:17px}.sheet.fit2 .sh-kw p{font-size:12.5px;line-height:1.55}.sheet.fit2 .sh-next .k{font-size:20px}
+.sheet.fit3{--cut:4px}.sheet.fit3 .sh-kw b{font-size:16px}.sheet.fit3 .sh-kw p{font-size:12px;line-height:1.5}.sheet.fit3 .sh-next .k{font-size:18px}.sheet.fit3 .sh-next .d{font-size:12.5px}
+
+@media print{
+  @page{size:A4;margin:0}
+  html,body{background:#fff;height:auto}
+  #app{display:none!important}
+  #printRoot{display:block!important}
+  #printRoot .sheet{break-after:page;page-break-after:always}
+  #printRoot .sheet:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side"><h2>児童一覧</h2><div id="stuList"></div></aside>
+  <section id="main">
+    <nav id="tabs"></nav>
+    <div id="panel"></div>
+  </section>
+  <aside id="pv"><div class="cap" id="pvCap"></div><div class="pvw"><div class="pvi" id="pvi"></div></div></aside>
+</div>
+<div id="printRoot"></div>
+
+<script>
+'use strict';
+/* ================= データ ================= */
+const KEY='mendan-maker-v2';
+const SUBJ=['ko','sa'];
+const CIR='①②③④⑤⑥⑦⑧⑨⑩⑪⑫';
+const MAXT=12;
+const PARTS={ks:'知識・技能 ＋ 思考・判断',k:'知識・技能 のみ',s:'思考・判断 のみ'};
+const emptyItem=()=>({k:'',d:''});
+const hasK=t=>t.p.indexOf('k')>=0, hasS=t=>t.p.indexOf('s')>=0;
+function defSubj(){
+  return {
+    ko:{name:'国語',max:{k:100,s:100},tests:[
+      {u:'白いぼうし',p:'ks'},{u:'アップとルーズ',p:'ks'},{u:'漢字50問テスト①',p:'k'},
+      {u:'一つの花',p:'ks'},{u:'漢字50問テスト②',p:'k'},{u:'言葉の力',p:'k'},
+      {u:'聞く話す',p:'s'},{u:'漢字50問テスト①',p:'k'},{u:'ごんぎつね',p:'ks'}]},
+    sa:{name:'算数',max:{k:100,s:50},tests:[
+      {u:'大きな数のしくみ',p:'ks'},{u:'折れ線グラフ',p:'ks'},{u:'わり算のひっ算1',p:'ks'},
+      {u:'角の大きさ',p:'ks'},{u:'小数のしくみ',p:'ks'},{u:'わり算のひっ算2',p:'ks'},
+      {u:'がい数',p:'ks'},{u:'',p:'ks'}]}
+  };
+}
+function blankStudent(){
+  return {name:'',kakari:'',kaisha:'',memo:'',
+    sc:{ko:{k:[],s:[]},sa:{k:[],s:[]}},
+    learn:[emptyItem(),emptyItem(),emptyItem()],
+    life:[emptyItem(),emptyItem(),emptyItem()],
+    next:emptyItem()};
+}
+function sampleStudent(subj){
+  const s=blankStudent();
+  s.name='サンプル 太郎';s.kakari='〇〇係';s.kaisha='〇〇会社';
+  SUBJ.forEach((j,jj)=>{
+    subj[j].tests.forEach((t,i)=>{
+      if(hasK(t))s.sc[j].k[i]=Math.min(100,62+((i*13+jj*7)%38));
+      if(hasS(t))s.sc[j].s[i]=Math.round(subj[j].max.s*(0.55+((i*9+jj*5)%40)/100));
+    });
+  });
+  s.learn=[{k:'最後までやり抜く',d:'むずかしい問題に出会っても、あきらめずに最後まで取り組む姿が見られます。'},
+           {k:'理由をさがす',d:'「どうしてそうなるのか」を考え、答えのわけを自分の言葉で説明しようとします。'},
+           {k:'友だちの考えとつなぐ',d:'友だちの意見を聞いて、自分の考えを広げたり、深めたりしています。'}];
+  s.life=[{k:'気持ちの言語化',d:'うれしい、くやしいなどの気持ちを、ことばにして相手に伝えようとしています。'},
+          {k:'聴き上手',d:'友だちの話を最後まで聴き、うなずきながら受け止める姿があります。'},
+          {k:'気づいて動く',d:'係や会社の仕事で、言われる前に気づいて自分から動く場面があります。'}];
+  s.next={k:'発表にチャレンジ',d:'自分の考えをみんなの前で話す経験を、少しずつ増やしていきましょう。'};
+  return s;
+}
+function defaults(){
+  const subj=defSubj();
+  const st=[];for(let i=0;i<35;i++)st.push(blankStudent());
+  st[0]=sampleStudent(subj);
+  return {cls:'4年1組',term:'2学期',date:'2026年11月　日',subj,students:st};
+}
+let S;
+function load(){
+  try{const t=localStorage.getItem(KEY);if(t){S=normalize(JSON.parse(t));return;}}catch(e){}
+  S=defaults();
+}
+function normalize(o){
+  const d=defaults();
+  const r=Object.assign({},d,o);
+  r.subj=o.subj&&o.subj.ko&&o.subj.sa?o.subj:defSubj();
+  SUBJ.forEach(j=>{r.subj[j].max=Object.assign({k:100,s:100},r.subj[j].max);r.subj[j].tests=(r.subj[j].tests||[]).filter(t=>t&&t.p);});
+  r.students=(o.students&&o.students.length?o.students:d.students).map(s=>Object.assign(blankStudent(),s));
+  r.students.forEach(s=>{
+    s.sc=s.sc||{};SUBJ.forEach(j=>{s.sc[j]=s.sc[j]||{k:[],s:[]};s.sc[j].k=s.sc[j].k||[];s.sc[j].s=s.sc[j].s||[];});
+    while(s.learn.length<3)s.learn.push(emptyItem());
+    while(s.life.length<3)s.life.push(emptyItem());
+  });
+  return r;
+}
+let saveTimer=null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    try{localStorage.setItem(KEY,JSON.stringify(S));setStatus('自動保存しました '+new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}));}
+    catch(e){setStatus('自動保存できません。「印刷・保存」タブでデータを書き出してください',true);}
+  },300);
+}
+function setStatus(t,err){const el=document.getElementById('pvCap');if(el){el.textContent=el.dataset.base+'　｜　'+t;el.style.color=err?'#B33':'#666';}}
+
+/* ================= ユーティリティ ================= */
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const half=s=>String(s==null?'':s).normalize('NFKC');
+function toNum(v){
+  const t=half(v).replace(/[点\s,]/g,'');
+  if(t===''||!/^-?\d+(\.\d+)?$/.test(t))return null;
+  return parseFloat(t);
+}
+function setPath(o,p,v){const ks=p.split('.');let a=o;for(let i=0;i<ks.length-1;i++){const k=ks[i];if(a[k]==null)a[k]=/^\d+$/.test(ks[i+1])?[]:{};a=a[k];}a[ks[ks.length-1]]=v;}
+const $=id=>document.getElementById(id);
+const nm=(st,i)=>st.name&&st.name.trim()?st.name.trim():'児童'+String(i+1).padStart(2,'0');
+const filled=it=>!!(it.k&&it.k.trim());
+const anyVal=a=>a.some(v=>v!=null);
+function status(st){
+  const items=[...st.learn,...st.life,st.next];
+  const n=items.filter(filled).length;
+  const hasSc=SUBJ.some(j=>anyVal(st.sc[j].k)||anyVal(st.sc[j].s));
+  if(n===7&&hasSc)return 'full';
+  if(n>0||hasSc)return 'half';
+  return 'empty';
+}
+/* 貼り付け・並びの列構成：[テスト番号, 'k'|'s'] を左から順に */
+function colsOf(j){
+  const out=[];
+  S.subj[j].tests.forEach((t,i)=>{if(hasK(t))out.push([i,'k']);if(hasS(t))out.push([i,'s']);});
+  return out;
+}
+const testLabel=(t,i)=>`${CIR[i]||(i+1)}${t.u?' '+t.u:''}`;
+
+/* ================= シート描画 ================= */
+function noteOf(j){
+  const m=S.subj[j].max;
+  return m.k===m.s?`どちらも${m.k}点満点`:`知識・技能${m.k}点／思考・判断${m.s}点満点`;
+}
+function tableHTML(st,j){
+  const sj=S.subj[j],N=sj.tests.length,sc=st.sc[j];
+  const rh=N<=9?24:N===10?22:20;
+  const val=v=>v==null?'':`${esc(v)}`;
+  const rows=sj.tests.map((t,i)=>`<tr><td class="u"><i>${CIR[i]||(i+1)}</i>${esc(t.u)}</td>`+
+    (hasK(t)?`<td>${val(sc.k[i])}</td>`:`<td class="na">―</td>`)+
+    (hasS(t)?`<td>${val(sc.s[i])}</td>`:`<td class="na">―</td>`)+`</tr>`).join('');
+  return `<div style="--rh:${rh}px"><table class="tb"><colgroup><col><col style="width:62px"><col style="width:62px"></colgroup>
+  <thead><tr><th class="sj">${sj.name}</th><th>知識<small>/${sj.max.k}点</small></th><th>思考<small>/${sj.max.s}点</small></th></tr></thead>
+  <tbody>${rows}</tbody></table></div>`;
+}
+const PLOT=100,KK=PLOT*0.9/100;
+function graphHTML(st,j){
+  const sj=S.subj[j],N=Math.max(1,sj.tests.length),sc=st.sc[j];
+  const W=(339-34)/N,bw=Math.max(6,Math.min(20,Math.floor((W-6)/2)));
+  const bar=(v,mx,h)=>{
+    if(v==null||!isFinite(v))return `<u style="width:${bw}px;height:0;border:0;background:none"></u>`;
+    const pct=Math.max(0,Math.min(100,v/mx*100));
+    return `<u class="${h?'h':''}" style="width:${bw}px;height:${Math.round(pct*KK)}px"></u>`;
+  };
+  let g='',x='';
+  sj.tests.forEach((t,i)=>{
+    g+=`<div class="gp">${hasK(t)?bar(sc.k[i],sj.max.k,false):''}${hasS(t)?bar(sc.s[i],sj.max.s,true):''}</div>`;
+    x+=`<div>${CIR[i]||(i+1)}</div>`;
+  });
+  const t100=Math.round(PLOT-100*KK),t50=Math.round(PLOT-50*KK);
+  return `<div class="pn"><div class="tt"><b>${sj.name}</b><span>${noteOf(j)}</span></div>
+  <div class="pl"><div class="ya" style="height:${PLOT}px"><span style="top:${t100-7}px">満点</span><span style="top:${t50-7}px">半分</span></div>
+  <div class="pa" style="height:${PLOT}px"><div class="gl" style="top:${t100}px"></div><div class="gl" style="top:${t50}px"></div><div class="gs">${g}</div></div></div>
+  <div class="xl">${x}</div></div>`;
+}
+function kw3(items){
+  const f=items.filter(it=>filled(it)||(it.d&&it.d.trim()));
+  if(!f.length)return '';
+  return `<div class="sh-kw" style="grid-template-columns:repeat(${f.length},minmax(0,1fr))">`+
+    f.map(it=>`<div><b>・${esc(it.k)}</b><p>${esc(it.d)}</p></div>`).join('')+`</div>`;
+}
+function sheetHTML(st,i){
+  const team=(st.kakari||st.kaisha)?`　　係：${esc(st.kakari||'')}　／　会社：${esc(st.kaisha||'')}`:'';
+  const nx=st.next;
+  return `<div class="sheet">
+  <div class="sh-head"><h1>${esc(nm(st,i))}さん　学級面談</h1><div class="meta">${esc(S.cls)}　${esc(S.term)}<br>${esc(S.date)}</div></div>
+  <div class="sh-sec">
+    <div class="sh-title"><b>学習面</b><span>テストの結果 ・ 授業の中で見えた姿</span></div>
+    <div class="sh-tbs">${SUBJ.map(j=>tableHTML(st,j)).join('')}</div>
+    <div class="sh-gl"><div>グラフ：棒の高さは、満点に対する割合です</div>
+      <div class="sh-leg"><div><i style="background:#1A1A1A"></i>知識・技能</div><div><i style="background:repeating-linear-gradient(45deg,#1A1A1A 0,#1A1A1A 2px,#FFFFFF 2px,#FFFFFF 5px)"></i>思考・判断</div></div></div>
+    <div class="sh-pan">${SUBJ.map(j=>graphHTML(st,j)).join('')}</div>
+    ${kw3(st.learn)}
+  </div>
+  <div class="sh-sec">
+    <div class="sh-title"><b>生活面</b><span>授業のそとで見えた姿${team}</span></div>
+    ${kw3(st.life)}
+  </div>
+  ${(nx.k||nx.d)?`<div class="sh-next"><div class="l">これから</div><div class="k">・${esc(nx.k)}</div><div class="d">${esc(nx.d)}</div></div>`:''}
+  <div class="sh-memo"><div class="l">おうちの方のメモ<span>気になったこと・聞いてみたいこと</span></div><div class="ln"></div></div>
+  </div>`;
+}
+function fitSheets(root){
+  const bad=[];
+  root.querySelectorAll('.sheet').forEach((el,i)=>{
+    el.classList.remove('fit1','fit2','fit3');
+    for(let l=1;l<=3&&el.scrollHeight>el.clientHeight+1;l++){
+      if(l>1)el.classList.remove('fit'+(l-1));
+      el.classList.add('fit'+l);
+    }
+    if(el.scrollHeight>el.clientHeight+1)bad.push(i);
+  });
+  return bad;
+}
+function buildSheets(list){
+  const box=document.createElement('div');box.style.cssText='position:fixed;left:-99999px;top:0';
+  box.innerHTML=list.map(i=>sheetHTML(S.students[i],i)).join('');
+  document.body.appendChild(box);
+  const bad=fitSheets(box).map(k=>list[k]);
+  const html=box.innerHTML;box.remove();
+  return {html,bad};
+}
+
+/* ================= 画面 ================= */
+let cur=0,tab='set';
+const TABS=[['set','① テストの設定'],['score','② 名簿・点数'],['stu','③ 児童ごとの入力'],['gem','④ Gemini連携'],['out','⑤ 印刷・保存']];
+function renderTabs(){$('tabs').innerHTML=TABS.map(([id,t])=>`<button data-tab="${id}" class="${id===tab?'on':''}">${t}</button>`).join('');}
+function renderList(){
+  $('stuList').innerHTML=S.students.map((st,i)=>{
+    const s=status(st);
+    return `<button class="stu ${i===cur?'cur':''}" data-i="${i}"><span class="no">${i+1}</span><span>${esc(nm(st,i))}</span><span class="st"><span class="dot ${s==='full'?'full':s==='half'?'half':''}"></span></span></button>`;
+  }).join('');
+}
+function renderPreview(){
+  const st=S.students[cur];
+  $('pvi').innerHTML=sheetHTML(st,cur);fitSheets($('pvi'));
+  const cap=$('pvCap');cap.dataset.base='プレビュー：'+(cur+1)+'番 '+nm(st,cur);cap.textContent=cap.dataset.base;
+}
+function refresh(){renderList();renderPreview();}
+
+function countText(j){
+  const c=colsOf(j),k=c.filter(x=>x[1]==='k').length,s=c.length-k;
+  return `テスト${S.subj[j].tests.length}回（知識・技能${k}列＋思考・判断${s}列＝ ${c.length}列）`;
+}
+function testEditor(j){
+  const sj=S.subj[j],N=sj.tests.length;
+  const rows=sj.tests.map((t,i)=>`<div class="tl"><span class="no">${CIR[i]||(i+1)}</span>
+   <input type="text" data-tu="${j}.${i}" value="${esc(t.u)}" placeholder="単元名">
+   <select data-tp="${j}.${i}">${Object.keys(PARTS).map(p=>`<option value="${p}" ${p===t.p?'selected':''}>${PARTS[p]}</option>`).join('')}</select>
+   <span><button class="btn sm" data-act="tup" data-j="${j}" data-i="${i}" ${i===0?'disabled':''}>↑</button> <button class="btn sm" data-act="tdn" data-j="${j}" data-i="${i}" ${i===N-1?'disabled':''}>↓</button> <button class="btn sm warn" data-act="tdel" data-j="${j}" data-i="${i}">削除</button></span></div>`).join('');
+  return `<h4>${sj.name}：${countText(j)}</h4>${rows}
+  <div class="row"><button class="btn sm" data-act="tadd" data-j="${j}" ${N>=MAXT?'disabled':''}>＋ テストを追加</button>
+  <label class="f" style="flex-direction:row;align-items:center;gap:6px;margin-left:12px">満点　知識・技能<input type="number" data-set="subj.${j}.max.k" data-num="1" value="${sj.max.k}" style="width:70px"></label>
+  <label class="f" style="flex-direction:row;align-items:center;gap:6px">思考・判断<input type="number" data-set="subj.${j}.max.s" data-num="1" value="${sj.max.s}" style="width:70px"></label></div>`;
+}
+function panelSet(){
+  return `<h3>テストの設定</h3><p class="hint">スプレッドシートの並びと同じ順に、テストを登録します。「知識・技能のみ」「思考・判断のみ」のテストも選べます。写真から読み取った構成が最初から入っています（単元名や数が違うときは直してください）。</p>
+  <div class="row">
+   <label class="f">学級<input type="text" data-set="cls" value="${esc(S.cls)}"></label>
+   <label class="f">学期<input type="text" data-set="term" value="${esc(S.term)}"></label>
+   <label class="f">面談の日付（全員共通）<input type="text" data-set="date" value="${esc(S.date)}" size="22"></label>
+  </div>
+  ${testEditor('ko')}${testEditor('sa')}`;
+}
+function panelScore(){
+  return `<h3>名簿・点数の貼り付け</h3>
+  <p class="hint">スプレッドシートで<b>児童の行</b>をコピーして、そのまま貼り付けます。国語と算数は別々です。<br>
+  ・<b>名前の列（B列）から</b>コピーすると、名前も同時に入ります。満点・平均の行や、空の区切り行は自動で読み飛ばします。<br>
+  ・名前の列を含めない場合は、児童の点数の行だけを選んでください（上から○行を読み飛ばす欄で調整できます）。<br>
+  ・列の数は、「① テストの設定」のとおりである必要があります。</p>
+  ${SUBJ.map(j=>`<h4>${S.subj[j].name}</h4><p class="hint">${countText(j)}の順に並んだ範囲です。</p>
+  <textarea data-pst="${j}" rows="4" placeholder="${S.subj[j].name}の児童の行を貼り付け"></textarea>
+  <div class="row"><label style="font-size:13px">上から <input type="number" min="0" value="0" id="skip_${j}" style="width:60px"> 行を読み飛ばす</label>
+  <button class="btn pri" data-act="scores" data-j="${j}">${S.subj[j].name}の点数を反映</button><span class="msg" id="msg_${j}"></span></div>`).join('')}
+  <h4>名簿だけを貼る場合（任意）</h4>
+  <textarea id="roster" rows="3" placeholder="名前の列を貼り付け（1行1人）"></textarea>
+  <div class="row"><button class="btn" data-act="roster">名簿を反映</button><span class="msg" id="msgRoster"></span></div>`;
+}
+function itemRows(label,key,n){
+  const st=S.students[cur];
+  let h=`<h4>${label}</h4>`;
+  for(let i=0;i<n;i++){
+    const it=key==='next'?st.next:st[key][i];
+    const p=key==='next'?'next':`${key}.${i}`;
+    h+=`<div class="kwrow"><div><input type="text" data-path="${p}.k" value="${esc(it.k)}" placeholder="キーワード" style="width:100%"></div>
+    <div><textarea data-path="${p}.d" rows="2" placeholder="保護者向けの説明（40〜50字くらい）">${esc(it.d)}</textarea><div class="cnt ${it.d.length>55?'over':''}" data-cnt="${p}.d">${it.d.length}字</div></div></div>`;
+  }
+  return h;
+}
+function panelStu(){
+  const st=S.students[cur];
+  const grid=SUBJ.map(j=>{
+    const sj=S.subj[j];
+    return `<div><b style="font-size:13px">${sj.name}</b><div class="sg"><div></div><div class="hd">知識・技能</div><div class="hd">思考・判断</div>`+
+    sj.tests.map((t,i)=>`<div class="lb" title="${esc(t.u)}">${CIR[i]||(i+1)} ${esc(t.u)}</div>`+
+      (hasK(t)?`<input type="text" inputmode="decimal" data-sc="${j}.k.${i}" value="${st.sc[j].k[i]==null?'':st.sc[j].k[i]}">`:`<div class="na">―</div>`)+
+      (hasS(t)?`<input type="text" inputmode="decimal" data-sc="${j}.s.${i}" value="${st.sc[j].s[i]==null?'':st.sc[j].s[i]}">`:`<div class="na">―</div>`)).join('')+`</div></div>`;
+  }).join('');
+  return `<h3>${cur+1}番　${esc(nm(st,cur))}さん</h3><p class="hint">左の一覧で児童を選びます。入力は自動で保存され、右のプレビューにすぐ反映されます。</p>
+  <div class="row"><label class="f">名前<input type="text" data-path="name" value="${esc(st.name)}"></label>
+  <label class="f">係<input type="text" data-path="kakari" value="${esc(st.kakari)}"></label>
+  <label class="f">会社<input type="text" data-path="kaisha" value="${esc(st.kaisha)}"></label></div>
+  <h4>テストの点数</h4><div class="two">${grid}</div>
+  ${itemRows('授業の中で見えた姿（学習面）','learn',3)}
+  ${itemRows('授業のそとで見えた姿（生活面）','life',3)}
+  ${itemRows('これから','next',1)}
+  <div class="row" style="margin-top:14px"><button class="btn" data-act="prev">← 前の児童</button><button class="btn pri" data-act="next">次の児童 →</button></div>`;
+}
+function panelGem(){
+  return `<h3>Gemini連携</h3>
+  <p class="hint">この画面からGeminiを直接呼び出すことはできません。<b>「プロンプトをコピー → Geminiに貼る → 返ってきた文章を貼り戻す」</b>の流れで使います。何度やり直しても構いません。<br>
+  児童の名前はプロンプトに入りません（出席番号と観察メモだけ）。個人情報の扱いは学校・教育委員会のルールに従ってください。</p>
+  <h4>① 観察メモを入力（短くてOK）</h4>
+  <p class="hint">1人につき「発言のようす」「友だちとの関わり」など、思いつくまま短く。メモが空の児童はプロンプトに入りません。</p>
+  <div id="memoTable">${S.students.map((st,i)=>`<div class="row" style="margin:3px 0;flex-wrap:nowrap"><span style="width:26px;text-align:right;color:#777">${i+1}</span><input type="text" data-memo="${i}" value="${esc(st.memo)}" placeholder="${esc(nm(st,i))}" style="flex:1"></div>`).join('')}</div>
+  <h4>② プロンプトをコピーしてGeminiに貼る</h4>
+  <div class="row"><button class="btn pri" data-act="copyAll">メモのある児童全員分をコピー</button><button class="btn" data-act="copyOne">選択中の児童（${cur+1}番）だけコピー</button><span class="msg" id="msgCopy"></span></div>
+  <h4>③ Geminiの返事をここに貼る</h4>
+  <textarea id="gemOut" rows="8" placeholder="番号|区分|キーワード|説明 の行が並んだ返事を、そのまま貼り付け"></textarea>
+  <div class="row"><label style="font-size:13px"><input type="checkbox" id="keepFilled" checked> すでに入力済みの欄は残す</label><button class="btn pri" data-act="applyGem">反映</button><span class="msg" id="msgGem"></span></div>`;
+}
+function panelOut(){
+  return `<h3>印刷・保存</h3>
+  <h4>印刷</h4>
+  <p class="hint">印刷画面で <b>用紙：A4／余白：なし（または「デフォルト」→「なし」）／拡大縮小：100%／ヘッダーとフッター：オフ</b> にしてください。「PDFに保存」を選べばPDFにもなります。</p>
+  <div class="row"><button class="btn pri" data-act="printAll">全員分（${S.students.length}枚）を印刷</button><button class="btn" data-act="printOne">選択中の1枚だけ印刷</button></div>
+  <div class="row"><button class="btn" data-act="checkOver">はみ出しチェック</button><button class="btn" data-act="checkEmpty">未入力チェック</button><span class="msg" id="msgCheck"></span></div>
+  <div id="checkOut" class="hint"></div>
+  <h4>データの保存と引っ越し</h4>
+  <p class="hint">入力内容は、このブラウザに自動保存されます。念のため、ファイルへの書き出しをおすすめします（別のPCに移すときも使えます）。<br>※ ブラウザの閲覧データを消去すると、自動保存の内容も消えます。</p>
+  <div class="row"><button class="btn" data-act="export">データを書き出し（.json）</button><label class="btn" style="cursor:pointer">データを読み込み<input type="file" id="importFile" accept=".json,application/json" style="display:none"></label><span class="msg" id="msgIO"></span></div>
+  <h4>初期化</h4>
+  <div class="row"><button class="btn warn" data-act="reset">すべて消して最初の状態に戻す</button></div>`;
+}
+function renderPanel(){$('panel').innerHTML={set:panelSet,score:panelScore,stu:panelStu,gem:panelGem,out:panelOut}[tab]();}
+function renderAll(){renderTabs();renderPanel();refresh();}
+
+/* ================= イベント ================= */
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-goto]');
+  if(g){e.preventDefault();cur=+g.dataset.goto;tab='stu';renderAll();return;}
+  const t=e.target.closest('[data-tab]');
+  if(t){tab=t.dataset.tab;renderTabs();renderPanel();return;}
+  const s=e.target.closest('.stu');
+  if(s){cur=+s.dataset.i;renderList();renderPreview();if(tab==='stu'||tab==='gem')renderPanel();return;}
+  const a=e.target.closest('[data-act]');
+  if(a&&!a.disabled)act(a.dataset.act,a);
+});
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.dataset.set){
+    let v=el.value;if(el.dataset.num)v=parseFloat(v)||0;
+    setPath(S,el.dataset.set,v);save();renderPreview();return;
+  }
+  if(el.dataset.tu){const [j,i]=el.dataset.tu.split('.');S.subj[j].tests[+i].u=el.value;save();renderPreview();return;}
+  const st=S.students[cur];
+  if(el.dataset.path){
+    setPath(st,el.dataset.path,el.value);
+    const c=document.querySelector(`[data-cnt="${el.dataset.path}"]`);
+    if(c){c.textContent=el.value.length+'字';c.classList.toggle('over',el.value.length>55);}
+    save();renderPreview();renderList();
+    if(el.dataset.path==='name'){const h=document.querySelector('#panel h3');if(h)h.textContent=(cur+1)+'番　'+nm(st,cur)+'さん';}
+    return;
+  }
+  if(el.dataset.sc&&tab==='stu'){
+    const [j,p,i]=el.dataset.sc.split('.');
+    st.sc[j][p][+i]=toNum(el.value);
+    save();renderPreview();renderList();return;
+  }
+  if(el.dataset.memo!=null){S.students[+el.dataset.memo].memo=el.value;save();return;}
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.id==='importFile'){importJSON(el.files[0]);el.value='';return;}
+  if(el.dataset.tp){const [j,i]=el.dataset.tp.split('.');S.subj[j].tests[+i].p=el.value;save();renderPanel();refresh();}
+});
+window.addEventListener('beforeunload',()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}});
+
+function msg(id,t,err){const el=$(id);if(el){el.textContent=t;el.className='msg'+(err?' err':'');}}
+function mutateTests(j,fn){
+  fn(S.subj[j].tests);
+  S.students.forEach(st=>{fn(st.sc[j].k);fn(st.sc[j].s);});
+  save();renderPanel();refresh();
+}
+function act(name,el){
+  const j=el&&el.dataset?el.dataset.j:null,i=el&&el.dataset?+el.dataset.i:0;
+  switch(name){
+    case 'prev':if(cur>0){cur--;renderAll();}break;
+    case 'next':if(cur<S.students.length-1){cur++;renderAll();}break;
+    case 'tadd':S.subj[j].tests.push({u:'',p:'ks'});save();renderPanel();refresh();break;
+    case 'tdel':if(confirm('このテストを削除します。全員のこのテストの点数も消えます。よろしいですか？'))mutateTests(j,a=>{a.splice(i,1);});break;
+    case 'tup':mutateTests(j,a=>{const x=a[i-1];a[i-1]=a[i];a[i]=x;});break;
+    case 'tdn':mutateTests(j,a=>{const x=a[i+1];a[i+1]=a[i];a[i]=x;});break;
+    case 'roster':applyRoster();break;
+    case 'scores':applyScores(j);break;
+    case 'copyAll':copyPrompt(false);break;
+    case 'copyOne':copyPrompt(true);break;
+    case 'applyGem':applyGemini();break;
+    case 'printAll':printList(S.students.map((_,k)=>k));break;
+    case 'printOne':printList([cur]);break;
+    case 'checkOver':checkOverflow();break;
+    case 'checkEmpty':checkEmpty();break;
+    case 'export':exportJSON();break;
+    case 'reset':if(confirm('入力したデータをすべて消して、最初の状態に戻します。よろしいですか？\n（先に「データを書き出し」でバックアップできます）')){S=defaults();cur=0;save();renderAll();}break;
+  }
+}
+
+/* ===== 貼り付け処理 ===== */
+function parseRows(text){
+  return text.replace(/\r/g,'').split('\n').map(l=>l.split('\t')).filter(r=>r.some(x=>x.trim()!==''));
+}
+function applyRoster(){
+  const rows=parseRows($('roster').value);
+  if(!rows.length){msg('msgRoster','名簿が空です',true);return;}
+  const names=rows.map(r=>{const c=r.map(x=>x.trim()).filter(x=>x!==''&&toNum(x)==null);return c.length?c[0]:'';});
+  while(S.students.length<names.length)S.students.push(blankStudent());
+  names.forEach((n,i)=>{S.students[i].name=n;});
+  save();refresh();msg('msgRoster',names.length+'人の名前を反映しました（児童は全部で'+S.students.length+'人）');
+}
+function applyScores(j){
+  const id='msg_'+j,nameJ=S.subj[j].name;
+  const ta=document.querySelector(`textarea[data-pst="${j}"]`);
+  const rows=parseRows(ta.value).map(r=>r.map(x=>x.trim()));
+  if(!rows.length){msg(id,'貼り付けが空です',true);return;}
+  const cols=colsOf(j),nExp=cols.length;
+  const isNum=x=>toNum(x)!=null;
+  const isNameRow=r=>r[0]!==''&&!isNum(r[0])&&r.slice(1).every(x=>x===''||isNum(x));
+  const nameMode=rows.some(r=>isNameRow(r)&&r.slice(1).some(isNum));
+  let data;
+  if(nameMode){
+    data=rows.filter(isNameRow).map(r=>({name:r[0],cells:r.slice(1)}));
+  }else{
+    let skip=Math.max(0,parseInt($('skip_'+j).value,10)||0);
+    data=rows.filter(r=>r.some(isNum)).slice(skip).map(r=>({name:null,cells:r}));
+  }
+  if(!data.length){msg(id,'点数の行が見つかりません',true);return;}
+  const trimTail=c=>{let n=c.length;while(n>0&&c[n-1]==='')n--;return n;};
+  const maxLen=Math.max(...data.map(d=>trimTail(d.cells)));
+  if(maxLen>nExp){msg(id,`貼られた点数の列が${maxLen}列あり、設定（${nExp}列）より多いです。「① テストの設定」のテスト数・種類を確認するか、貼る範囲を見直してください`,true);return;}
+  while(S.students.length<data.length)S.students.push(blankStudent());
+  data.forEach((d,r)=>{
+    const st=S.students[r];
+    if(d.name!=null)st.name=d.name;
+    st.sc[j]={k:[],s:[]};
+    cols.forEach(([ti,p],c)=>{st.sc[j][p][ti]=c<d.cells.length?toNum(d.cells[c]):null;});
+  });
+  save();refresh();
+  msg(id,`${nameJ}：${data.length}人分を反映しました`+(nameMode?'（名前も反映）':'')+(maxLen<nExp?`　※${maxLen}列分（設定は${nExp}列。後ろのテストは未実施として空欄）`:'')+(data.length!==S.students.length?`　※児童数(${S.students.length})と異なります`:''),data.length!==S.students.length);
+}
+
+/* ===== Gemini ===== */
+function promptFor(list){
+  const memos=list.map(i=>`${i+1}：${S.students[i].memo.trim()}`).join('\n');
+  return `あなたは小学4年生の担任教師の補助をします。保護者面談で渡す資料に載せる文章を、児童ごとに作ってください。
+
+【ルール】
+・児童は「番号」で区別します。名前は出てきません。
+・各児童について、次の7行を出力します。
+　授業の中で見えた姿（学習面）…3行（区分は「授業」）
+　授業のそとで見えた姿（生活面）…3行（区分は「生活」）
+　これから挑戦したいこと…1行（区分は「これから」）
+・キーワード：10文字以内の体言止め。例）最後までやり抜く／気持ちの言語化／聴き上手
+・説明：保護者に向けた、やさしい丁寧語の1文。40〜50文字。子どもの姿が目に浮かぶように書く。
+・すべて前向きな表現にします。「できない」「苦手」「〜しない」など、欠点を指摘する言い方は使いません。
+・「これから」は、いまの良さの延長にある次の一歩として、意欲が湧く言い方にします。
+・メモに書かれていないことは付け加えません（作り話をしない）。メモが少ない場合は、メモの範囲で言い換えてください。
+
+【出力形式】
+次の形式の行だけを出力してください。前置き、解説、見出し、コードブロックは不要です。
+番号|区分|キーワード|説明
+1|授業|最後までやり抜く|むずかしい問題でも、あきらめずに最後まで取り組む姿が見られます。
+
+【児童のメモ】
+${memos}`;
+}
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);return true;}catch(e){}
+  const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();
+  let ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();return ok;
+}
+async function copyPrompt(one){
+  const list=one?[cur]:S.students.map((_,i)=>i).filter(i=>S.students[i].memo.trim());
+  if(!list.length||(one&&!S.students[cur].memo.trim())){msg('msgCopy','観察メモが入力された児童がいません',true);return;}
+  const ok=await copyText(promptFor(list));
+  msg('msgCopy',ok?`${list.length}人分のプロンプトをコピーしました。Geminiに貼り付けてください`:'コピーできませんでした',!ok);
+}
+function parseGemini(text){
+  const out=[];
+  text.replace(/\r/g,'').split('\n').forEach(line=>{
+    let t=line.trim();if(!t)return;
+    t=t.replace(/^[|｜]\s*/,'').replace(/\s*[|｜]$/,'');
+    if(/^[-:\s|｜]+$/.test(t))return;
+    const p=t.split(/\s*[|｜\t]\s*/);
+    if(p.length<4)return;
+    const no=parseInt(half(p[0]).replace(/\D/g,''),10);if(!no)return;
+    const c=p[1].replace(/\s/g,'');
+    const kind=/授業/.test(c)?'learn':/生活/.test(c)?'life':/これから/.test(c)?'next':null;
+    if(!kind)return;
+    out.push({no,kind,k:p[2].trim().replace(/\*+/g,'').replace(/^[・\-＊\s]+/,''),d:p.slice(3).join('｜').trim().replace(/\*\*/g,'')});
+  });
+  return out;
+}
+function applyGemini(){
+  const rows=parseGemini($('gemOut').value);
+  if(!rows.length){msg('msgGem','読み取れる行がありません。「番号|区分|キーワード|説明」の形式か確認してください',true);return;}
+  const keep=$('keepFilled').checked;
+  const cnt={};let applied=0,kept=0,bad=0;const who=new Set();
+  rows.forEach(r=>{
+    const st=S.students[r.no-1];if(!st){bad++;return;}
+    const key=r.no+r.kind;const n=cnt[key]||0;cnt[key]=n+1;
+    let slot;
+    if(r.kind==='next'){if(n>0)return;slot=st.next;}
+    else{if(n>=3)return;slot=st[r.kind][n];}
+    if(keep&&(slot.k||slot.d)){kept++;return;}
+    slot.k=r.k;slot.d=r.d;applied++;who.add(r.no);
+  });
+  save();refresh();
+  msg('msgGem',`${who.size}人・${applied}件を反映しました`+(kept?`（入力済み${kept}件は残しました）`:'')+(bad?`（番号が範囲外 ${bad}件を無視）`:''),false);
+}
+
+/* ===== 印刷・チェック ===== */
+function printList(list){
+  const empties=list.filter(i=>status(S.students[i])!=='full');
+  if(empties.length&&list.length>1&&!confirm(`未入力の項目がある児童が ${empties.length}人 います。このまま印刷しますか？`))return;
+  const b=buildSheets(list);
+  if(b.bad.length&&!confirm(`文字が多くてA4に収まらない児童が ${b.bad.length}人 います（${b.bad.map(i=>i+1).join('・')}番）。このまま印刷しますか？`))return;
+  $('printRoot').innerHTML=b.html;
+  const go=()=>setTimeout(()=>window.print(),150);
+  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go);
+}
+window.addEventListener('afterprint',()=>{$('printRoot').innerHTML='';});
+function checkOverflow(){
+  const bad=buildSheets(S.students.map((_,i)=>i)).bad;
+  msg('msgCheck',bad.length?`文字が多くて収まらない児童が ${bad.length}人 います`:'すべてA4・1枚に収まっています（文字が多い場合は自動で少し小さくしています）',!!bad.length);
+  $('checkOut').innerHTML=bad.length?'説明文を短くしてください：'+bad.map(i=>`<a href="#" data-goto="${i}">${i+1}番 ${esc(nm(S.students[i],i))}</a>`).join('、'):'';
+}
+function checkEmpty(){
+  const rows=[];
+  S.students.forEach((st,i)=>{
+    const miss=[];
+    const lack=(arr,l)=>{const n=arr.filter(filled).length;if(n<3)miss.push(`${l}${3-n}`);};
+    lack(st.learn,'学習面');lack(st.life,'生活面');
+    if(!filled(st.next))miss.push('これから');
+    SUBJ.forEach(j=>{if(!anyVal(st.sc[j].k)&&!anyVal(st.sc[j].s))miss.push(S.subj[j].name+'の点数');});
+    if(miss.length)rows.push(`<a href="#" data-goto="${i}">${i+1}番 ${esc(nm(st,i))}</a>（${miss.join('・')}が未入力）`);
+  });
+  msg('msgCheck',rows.length?`未入力のある児童が ${rows.length}人 います`:'全員そろっています',!!rows.length);
+  $('checkOut').innerHTML=rows.join('<br>');
+}
+function exportJSON(){
+  const d=new Date();const ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));
+  a.download='面談シート_データ_'+ymd+'.json';document.body.appendChild(a);a.click();a.remove();
+  msg('msgIO','書き出しました（ダウンロードフォルダを確認してください）');
+}
+function importJSON(f){
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const o=JSON.parse(r.result);
+      if(!o.students)throw new Error('形式が違います');
+      if(!confirm('いまの入力内容を、読み込んだデータで置き換えます。よろしいですか？'))return;
+      S=normalize(o);cur=0;save();renderAll();msg('msgIO','読み込みました');
+    }catch(e){msg('msgIO','読み込めませんでした：'+e.message,true);}
+  };
+  r.readAsText(f);
+}
+
+/* ================= 起動 ================= */
+load();renderAll();
+</script>
+</body>
+</html>
